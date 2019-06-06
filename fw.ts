@@ -1,6 +1,6 @@
 import { constants, Http2SecureServer, IncomingHttpHeaders, ServerHttp2Session, ServerHttp2Stream } from "http2";
 const { HTTP_STATUS_NOT_FOUND, HTTP_STATUS_INTERNAL_SERVER_ERROR, HTTP2_HEADER_PATH, HTTP2_HEADER_METHOD } = constants;
-import mime from "mime-types";
+//import mime from "mime-types";
 import { join } from "path";
 
 
