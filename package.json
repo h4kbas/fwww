@@ -2,13 +2,14 @@
   "name": "fw",
   "version": "1.0.0",
   "description": "A typescript web framework powered by pure http2",
-  "main": "",
+  "main": "Dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Hüseyin Akbaş",
   "license": "MIT",
   "dependencies": {
+    "@types/mime-types": "^2.1.0",
     "@types/node": "^12.0.5",
     "mime-types": "^2.1.24"
   }
