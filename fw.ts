@@ -1,8 +1,6 @@
-import { constants, createSecureServer, Http2SecureServer, IncomingHttpHeaders, ServerHttp2Stream, OutgoingHttpHeaders } from "http2";
+import { createSecureServer, Http2SecureServer, IncomingHttpHeaders, ServerHttp2Stream } from "http2";
 import { Request } from "./Request";
 import { existsSync } from "fs";
-import mime from "mime-types";
-
 
 interface IRoute {
   [cname: string]: any
@@ -44,22 +42,23 @@ export class FW {
     this.Server.on("stream", (stream: ServerHttp2Stream, headers: IncomingHttpHeaders) => {
       try {
         const request = new Request(headers, stream);
-        //Root
+        const context = Object.create(this.Options.Context);
+        // Root
         if (request.Path == "/") {
           request.Controller = this.Options.Root;
           request.Action = "Index";
         }
-        //File
+        // File
         else if (ExtensionRegex.test(request.Path)) {
           const file = this.Options.Public + request.Path;
           if (existsSync(file)) {
-            request.Stream.respondWithFile(file, { "content-type": mime.lookup(file) } as OutgoingHttpHeaders, { onError: (err) => request.Abort(500) });
+            request.File(file);
           }
           else {
             request.Abort(404);
           }
         }
-        //URL
+        // URL
         else {
           //Consequtively: request.Controller, request.Action?, ...Params?
           const paths = request.Path.split("/"); paths.shift();
@@ -77,20 +76,43 @@ export class FW {
             request.Params = paths.slice(3);
           }
         }
-        //Check URL exists
-        if (request.Controller in this.Options.Controllers && request.Action in this.Options.Controllers[request.Controller]) {
-          this.Options.Controllers[request.Controller][request.Action](request, this.Options.Context);
+        // Check URL exists
+        if (request.Controller in this.Options.Controllers &&
+          request.Action in this.Options.Controllers[request.Controller]) {
+          const Controller = this.Options.Controllers[request.Controller];
+          let Blocked = false;
+          const Block = () => Blocked = true;
+          for(let MW of Controller.Middlewares){
+            if("Before" in MW){
+              MW.Before(request, context, Block);
+            }
+            if("After" in MW){
+              MW.After(request, context, Block);
+            }
+            //If Middleware calls Block method Fallback will be executes if available
+            if(Blocked){
+              if("Fallback" in MW){
+                MW.Fallback(request, context);
+                break;
+              }
+            } 
+          }
+          //Call the method for corresponding url if not blocked
+          if(!Blocked){
+            Controller[request.Action](request, context);
+          }
         }
         else {
           request.Abort(404);
         }
       }
       catch (e) {
+        // tslint:disable-next-line: no-console
         console.error(e);
       }
     });
 
-    //Activate Server
+    // Activate Server
     this.Server.listen(this.Options.Port);
   }
 }

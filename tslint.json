@@ -5,7 +5,8 @@
     ],
     "jsRules": {},
     "rules": {
-        "curly": false
+        "curly": false,
+        "one-line": false
     },
     "rulesDirectory": []
 }
